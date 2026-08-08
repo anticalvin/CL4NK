@@ -4,24 +4,37 @@ CL4NK is a local-first, open-source AI companion focused on persistent identity,
 
 **HQ:** https://cl-4-nk.vercel.app
 
+## It runs now
+
+The repository now contains the first runnable local chassis in [`local/`](local/README.md).
+
+With Python 3 and Ollama installed:
+
+```bash
+ollama pull llama3.2
+python local/app.py
+```
+
+Then open `http://127.0.0.1:4242`.
+
+The local chassis includes chat through an OpenAI-compatible model server, SQLite conversation history, explicit durable memories, runtime/model configuration, and portable identity export/import. It uses the canonical [`personality.md`](personality.md) as CL4NK's identity core.
+
 ## Mission
 
 Build a standalone companion rather than a thin wrapper around a hosted chatbot.
 
-- Desktop-first, with a public documentation/download surface
+- Local-first companion runtime
 - Persistent local memory
 - Portable identity export/import
 - Replaceable adapters for Ollama, llama.cpp, and other compatible runtimes
 - Explicit permission gates for tools
 - No mandatory hosted account for the core experience
 
-## Architecture direction
+## Architecture
 
-Vercel hosts CL4NK Headquarters: documentation, roadmap, releases, downloads and future demos. It is not CL4NK's brain. The companion runtime remains local-first so the website is not required for CL4NK to operate or remember its user.
+Vercel hosts CL4NK Headquarters: documentation, roadmap, releases and future downloads. It is not CL4NK's brain.
 
-The intended desktop architecture is a lightweight Tauri shell, SQLite for living local state, JSON identity bundles for portability, and a replaceable inference adapter for local model servers.
-
-See [`personality.md`](personality.md) for the canonical public personality core.
+The first runtime deliberately uses a tiny Python standard-library HTTP service and SQLite so the behavior is inspectable and dependency-light. The next packaging layer can wrap or replace that service with a Tauri desktop shell without changing the identity/memory principles.
 
 ## Principles
 
@@ -37,18 +50,19 @@ See [`personality.md`](personality.md) for the canonical public personality core
 
 - [x] Public project / documentation headquarters
 - [x] Canonical personality core
-- [ ] Desktop shell
-- [ ] SQLite memory store
-- [ ] Portable identity bundle
-- [ ] Ollama / llama.cpp-compatible inference adapter
-- [ ] Memory retrieval and forgetting policy
+- [x] Runnable local chat chassis
+- [x] SQLite conversation + explicit memory store
+- [x] Portable identity export/import v1
+- [x] OpenAI-compatible local inference adapter
+- [ ] Smarter memory retrieval / forgetting policy
+- [ ] Tauri desktop packaging
 - [ ] Permissioned tool system
 - [ ] Voice
 - [ ] Signed/versioned desktop releases
 
 ## Status
 
-Pre-alpha. There are no official desktop binaries yet. Expect sharp edges, dramatic confidence, and architecture changes.
+Pre-alpha, but no longer decorative. There are still no official desktop binaries yet.
 
 ## License
 
