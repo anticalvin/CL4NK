@@ -1,0 +1,20 @@
+name: test
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile runtime
+        run: python -m py_compile local/app.py local/tools.py local/test_tools.py
+      - name: Adversarial tool tests
+        working-directory: local
+        run: python -m unittest -v test_tools.py
