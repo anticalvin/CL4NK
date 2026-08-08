@@ -1,4 +1,9 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/docs", "destination": "/docs.html" },
+    { "source": "/roadmap", "destination": "/roadmap.html" },
+    { "source": "/downloads", "destination": "/downloads.html" }
+  ]
 }
