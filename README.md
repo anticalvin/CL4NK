@@ -2,11 +2,13 @@
 
 CL4NK is a local-first, open-source AI companion focused on persistent identity, portable memory, and user-controlled inference.
 
+**HQ:** https://cl-4-nk.vercel.app
+
 ## Mission
 
 Build a standalone companion rather than a thin wrapper around a hosted chatbot.
 
-- Desktop-first, with an optional public web surface
+- Desktop-first, with a public documentation/download surface
 - Persistent local memory
 - Portable identity export/import
 - Replaceable adapters for Ollama, llama.cpp, and other compatible runtimes
@@ -15,7 +17,11 @@ Build a standalone companion rather than a thin wrapper around a hosted chatbot.
 
 ## Architecture direction
 
-The public website can live on Vercel for documentation, downloads, demos, releases, and project updates. The actual companion runtime remains local-first so Vercel is not a dependency for CL4NK to exist or remember who it is.
+Vercel hosts CL4NK Headquarters: documentation, roadmap, releases, downloads and future demos. It is not CL4NK's brain. The companion runtime remains local-first so the website is not required for CL4NK to operate or remember its user.
+
+The intended desktop architecture is a lightweight Tauri shell, SQLite for living local state, JSON identity bundles for portability, and a replaceable inference adapter for local model servers.
+
+See [`personality.md`](personality.md) for the canonical public personality core.
 
 ## Principles
 
@@ -29,6 +35,8 @@ The public website can live on Vercel for documentation, downloads, demos, relea
 
 ## Roadmap
 
+- [x] Public project / documentation headquarters
+- [x] Canonical personality core
 - [ ] Desktop shell
 - [ ] SQLite memory store
 - [ ] Portable identity bundle
@@ -36,11 +44,11 @@ The public website can live on Vercel for documentation, downloads, demos, relea
 - [ ] Memory retrieval and forgetting policy
 - [ ] Permissioned tool system
 - [ ] Voice
-- [ ] Public project/download site
+- [ ] Signed/versioned desktop releases
 
 ## Status
 
-Very early prototype. Expect sharp edges, dramatic confidence, and architecture changes.
+Pre-alpha. There are no official desktop binaries yet. Expect sharp edges, dramatic confidence, and architecture changes.
 
 ## License
 
