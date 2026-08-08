@@ -6,3 +6,6 @@ node_modules/
 dist/
 target/
 .vercel/
+__pycache__/
+*.py[cod]
+local/cl4nk.db

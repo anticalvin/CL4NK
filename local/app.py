@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sqlite3, urllib.request, urllib.error
+import json, os, re, sqlite3, urllib.request, urllib.error
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from datetime import datetime, timezone
@@ -13,6 +13,16 @@ HOST = os.getenv("CL4NK_HOST", "127.0.0.1")
 PORT = int(os.getenv("CL4NK_PORT", "4242"))
 DEFAULT_BASE_URL = os.getenv("CL4NK_BASE_URL", "http://127.0.0.1:11434/v1")
 DEFAULT_MODEL = os.getenv("CL4NK_MODEL", "llama3.2")
+
+STOPWORDS = {
+    "about", "after", "again", "also", "and", "are", "because", "been", "before",
+    "being", "but", "can", "could", "did", "does", "doing", "for", "from", "had",
+    "has", "have", "here", "how", "into", "its", "just", "like", "more", "not",
+    "now", "only", "our", "out", "really", "should", "some", "than", "that", "the",
+    "their", "them", "then", "there", "these", "they", "this", "those", "too", "was",
+    "were", "what", "when", "where", "which", "who", "why", "will", "with", "would",
+    "you", "your"
+}
 
 
 def now():
@@ -38,6 +48,11 @@ def db():
       updated_at TEXT NOT NULL
     );
     """)
+    columns = {r["name"] for r in conn.execute("PRAGMA table_info(memories)").fetchall()}
+    if "access_count" not in columns:
+        conn.execute("ALTER TABLE memories ADD COLUMN access_count INTEGER NOT NULL DEFAULT 0")
+    if "last_accessed_at" not in columns:
+        conn.execute("ALTER TABLE memories ADD COLUMN last_accessed_at TEXT")
     return conn
 
 
@@ -57,10 +72,52 @@ def personality():
         return "You are CL4NK, a useful local-first robotic companion. Accuracy outranks character."
 
 
-def memory_block(conn):
-    rows = conn.execute("SELECT content,importance FROM memories ORDER BY importance DESC, updated_at DESC LIMIT 24").fetchall()
+def tokens(text):
+    return {w for w in re.findall(r"[a-z0-9][a-z0-9_-]+", text.lower()) if len(w) > 2 and w not in STOPWORDS}
+
+
+def select_memories(conn, query, limit=8):
+    """Return a small mix of relevant memories and high-importance identity anchors."""
+    rows = conn.execute(
+        "SELECT id,content,importance,created_at,updated_at,access_count,last_accessed_at FROM memories"
+    ).fetchall()
+    if not rows:
+        return []
+
+    query_tokens = tokens(query)
+    scored = []
+    for row in rows:
+        memory_tokens = tokens(row["content"])
+        overlap = len(query_tokens & memory_tokens)
+        coverage = overlap / max(1, len(query_tokens))
+        specificity = overlap / max(1, len(memory_tokens))
+        relevance = (coverage * 0.65) + (specificity * 0.35)
+        score = relevance * 10 + (row["importance"] / 10)
+        scored.append((score, overlap, row))
+
+    # Keep a couple of high-importance memories in every prompt as identity anchors,
+    # then fill the remaining budget with memories that actually match the turn.
+    anchors = sorted(rows, key=lambda r: (r["importance"], r["updated_at"]), reverse=True)[:2]
+    chosen = {r["id"]: r for r in anchors}
+    for _, overlap, row in sorted(scored, key=lambda item: item[0], reverse=True):
+        if len(chosen) >= limit:
+            break
+        if overlap:
+            chosen[row["id"]] = row
+
+    return list(chosen.values())
+
+
+def memory_block(conn, query):
+    rows = select_memories(conn, query)
     if not rows:
         return "No durable user memories are stored yet."
+    ids = [r["id"] for r in rows]
+    placeholders = ",".join("?" for _ in ids)
+    conn.execute(
+        f"UPDATE memories SET access_count=access_count+1,last_accessed_at=? WHERE id IN ({placeholders})",
+        (now(), *ids),
+    )
     return "\n".join(f"- ({r['importance']}/10) {r['content']}" for r in rows)
 
 
@@ -73,7 +130,7 @@ def chat(conn, user_text):
     base_url = setting(conn, "base_url", DEFAULT_BASE_URL).rstrip("/")
     model = setting(conn, "model", DEFAULT_MODEL)
     api_key = setting(conn, "api_key", "local")
-    system = personality() + "\n\nDurable memory supplied by the user:\n" + memory_block(conn)
+    system = personality() + "\n\nRelevant durable memory supplied by the user:\n" + memory_block(conn, user_text)
     history = recent_messages(conn)
     messages = [{"role": "system", "content": system}] + history + [{"role": "user", "content": user_text}]
     payload = json.dumps({"model": model, "messages": messages, "temperature": 0.8, "stream": False}).encode()
@@ -96,7 +153,7 @@ def state(conn):
         "has_api_key": bool(setting(conn, "api_key", ""))
       },
       "messages": [dict(r) for r in conn.execute("SELECT id,role,content,created_at FROM messages ORDER BY id ASC").fetchall()],
-      "memories": [dict(r) for r in conn.execute("SELECT id,content,importance,created_at,updated_at FROM memories ORDER BY importance DESC, updated_at DESC").fetchall()]
+      "memories": [dict(r) for r in conn.execute("SELECT id,content,importance,created_at,updated_at,access_count,last_accessed_at FROM memories ORDER BY importance DESC, updated_at DESC").fetchall()]
     }
 
 
@@ -140,8 +197,8 @@ class Handler(SimpleHTTPRequestHandler):
                 text = str(data.get("message", "")).strip()
                 if not text: return self.send_json({"error":"Message is empty"}, 400)
                 with db() as conn:
-                    conn.execute("INSERT INTO messages(role,content,created_at) VALUES('user',?,?)", (text, now()))
                     reply = chat(conn, text)
+                    conn.execute("INSERT INTO messages(role,content,created_at) VALUES('user',?,?)", (text, now()))
                     conn.execute("INSERT INTO messages(role,content,created_at) VALUES('assistant',?,?)", (reply, now()))
                     conn.commit()
                     self.send_json({"reply": reply, "state": state(conn)})

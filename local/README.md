@@ -22,6 +22,7 @@ Both can be changed in the CL4NK interface.
 - Canonical `personality.md` injected as the system identity
 - SQLite conversation history
 - Explicit durable memories with 1–10 importance
+- Turn-aware memory retrieval that mixes relevant memories with high-priority identity anchors
 - Delete individual memories
 - Clear conversation history
 - Runtime URL/model configuration
@@ -36,6 +37,6 @@ API keys are stored locally in SQLite if supplied. The export format deliberatel
 
 ## Known limitations
 
-This is pre-alpha. Memory retrieval currently injects the highest-priority recent memories rather than using embeddings. Chat is non-streaming. There is no desktop packaging, voice, filesystem tool access, shell execution, automatic memory extraction, encryption-at-rest, or signed release yet.
+This is pre-alpha. Memory retrieval is currently dependency-free lexical matching rather than embeddings. Chat is non-streaming. There is no desktop packaging, voice, filesystem tool access, shell execution, automatic memory extraction, encryption-at-rest, or signed release yet.
 
 Those omissions are intentional: the first milestone is a small inspectable companion that actually runs.

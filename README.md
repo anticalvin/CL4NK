@@ -54,7 +54,8 @@ The first runtime deliberately uses a tiny Python standard-library HTTP service 
 - [x] SQLite conversation + explicit memory store
 - [x] Portable identity export/import v1
 - [x] OpenAI-compatible local inference adapter
-- [ ] Smarter memory retrieval / forgetting policy
+- [x] Turn-aware local memory retrieval v1
+- [ ] Memory summaries / forgetting policy
 - [ ] Tauri desktop packaging
 - [ ] Permissioned tool system
 - [ ] Voice
